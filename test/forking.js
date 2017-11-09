@@ -42,6 +42,7 @@ describe("Forking", function() {
   var initialDeployTransactionHash;
 
   before("set up test data", function() {
+    this.timeout(10000);
     var source = fs.readFileSync("./test/Example.sol", {encoding: "utf8"});
     var result = solc.compile(source, 1);
 
