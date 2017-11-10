@@ -423,8 +423,6 @@ describe("Forking", function() {
   })
 
   it("should be able to get logs across the fork boundary", function(done) {
-    this.timeout(10000)
-
     var Example = mainWeb3.eth.contract(JSON.parse(contract.abi));
     var example = Example.at(contractAddress);
 
