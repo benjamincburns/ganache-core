@@ -1,5 +1,13 @@
+- Two space indent
+- Avoid semicolons
+- Prefer import syntax over require syntax
+- New files should be TypeScript
+- Avoid use of the `any` type
 - Reference interfaces instead of concrete types in function signatures whenever possible
 - Parent types shouldn't reference child types
 - Define simple types as interfaces
 - Define interfaces for complex types, too
 - Type assertions are ugly - use type guards instead
+- If introducing a new dependency, it must have a typings file, or you must create one
+- Complex type unions are a surefire sign that you're trying to do too much in one place
+- Avoid hex strings everywhere except the RPC module's serialization/deserialization logic
