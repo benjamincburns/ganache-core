@@ -11,3 +11,4 @@
 - If introducing a new dependency, it must have a typings file, or you must create one
 - Complex type unions are a surefire sign that you're trying to do too much in one place
 - Avoid hex strings everywhere except the RPC module's serialization/deserialization logic
+- Only use the "to.ts" module in the RPC module's serialization/deserialization logic, and in tests
