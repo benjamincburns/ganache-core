@@ -1,0 +1,5 @@
+- Reference interfaces instead of concrete types in function signatures whenever possible
+- Parent types shouldn't reference child types
+- Define simple types as interfaces
+- Define interfaces for complex types, too
+- Type assertions are ugly - use type guards instead
