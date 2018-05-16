@@ -1,5 +1,5 @@
 import * as utils from 'ethereumjs-util'
-import * as BN from 'bn.js'
+import { BN } from 'bn.js'
 
 export interface IEncodabletoString {
   toString(encoding? : string) : string
@@ -17,7 +17,7 @@ export function hex(val: string | number | IEncodabletoString) : string {
     } else if ((val as string).indexOf('0x') == 0) {
       return String(val)
     } else {
-      val = (new BN.BN(val) as IEncodabletoString)
+      val = (new BN(val) as IEncodabletoString)
     }
   }
 

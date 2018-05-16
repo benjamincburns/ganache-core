@@ -3,6 +3,10 @@ declare module 'bn.js' {
   type Endianness = 'le'|'be'
 
   class BN {
+    words: number[]
+    length: number
+    negative: number
+
     constructor(number: number|string|number[]|Buffer, base?: number, endian?: Endianness)
     clone(): BN
     toString(base?: number, length?: number): string

@@ -1,13 +1,13 @@
 {
-    "compilerOptions": {
-        "outDir": "./lib",
-        "allowJs": true,
-        "target": "es5",
-        "noImplicitAny": true,
-        "strictNullChecks": true
-    },
-    "include": [
-        "./src/**/*",
-        "./typings/**/*.d.ts"
-    ]
+  "compilerOptions": {
+    "outDir": "./lib/types",
+    "target": "es5",
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+    "declaration": true
+  },
+  "include": [
+    "./src/types/**/*",
+    "./typings/**/*.d.ts"
+  ]
 }
