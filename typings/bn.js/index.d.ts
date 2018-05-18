@@ -13,6 +13,7 @@ declare module 'bn.js' {
     toNumber(): number
     toJSON(): string
     toArray(endian?: Endianness, length?: number): number[]
+    toArrayLike(ctor: Function, endian?: Endianness, length?: number): number[]
     toBuffer(endian?: Endianness, length?: number): Buffer
     bitLength(): number
     zeroBits(): number
