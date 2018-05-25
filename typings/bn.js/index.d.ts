@@ -2,18 +2,20 @@ declare module 'bn.js' {
 
   type Endianness = 'le'|'be'
 
-  class BN {
+  type BNInput = number|string|number[]|Buffer|Uint8Array|BN
+
+  export class BN {
     words: number[]
     length: number
     negative: number
 
-    constructor(number: number|string|number[]|Buffer, base?: number, endian?: Endianness)
+    constructor(number: BNInput, base?: number, endian?: Endianness)
     clone(): BN
     toString(base?: number, length?: number): string
     toNumber(): number
     toJSON(): string
     toArray(endian?: Endianness, length?: number): number[]
-    toArrayLike(ctor: Function, endian?: Endianness, length?: number): number[]
+    toArrayLike<T>(ctor: { new (...args: any[]): T }, endian?: Endianness, length?: number): T
     toBuffer(endian?: Endianness, length?: number): Buffer
     bitLength(): number
     zeroBits(): number
@@ -56,4 +58,7 @@ declare module 'bn.js' {
     egcd(b: BN): { a: BN, b: BN, gcd: BN }
     invm(b: BN): BN
   }
+
+  export default BN
 }
+
