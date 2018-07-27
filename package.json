@@ -26,7 +26,7 @@
     "ethereumjs-vm": "2.3.5",
     "ethereumjs-wallet": "~0.6.0",
     "level-js": "^3.0.0",
-    "level-sublevel": "^6.6.1",
+    "level-sublevel": "^6.6.5",
     "levelup": "^1.1.0",
     "lodash": "^4.17.5",
     "medeadown": "^1.1.9",
