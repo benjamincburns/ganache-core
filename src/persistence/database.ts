@@ -2,8 +2,8 @@ import { BN } from 'bn.js'
 
 import { AbstractLevelDOWN } from 'abstract-leveldown'
 import * as LevelUp from 'levelup'
-import MedeaDOWN from 'medeadown'
-import { CacheDOWN } from 'cachedown'
+import * as MedeaDOWN from 'medeadown'
+import * as CacheDOWN from 'cachedown'
 import LevelUpArrayAdapter from './database/leveluparrayadapter'
 import LevelUpObjectAdapter from './database/levelupobjectadapter'
 
@@ -40,7 +40,7 @@ export default class Database<K, V, O, PO, GO, DO, IO, BO> {
   transactions: LevelUpObjectAdapter<BN, ExecutedTransaction>
   trieDb: LevelUpObjectAdapter<Buffer, Buffer>
 
-  constructor(options: DatabaseOptions<K, V, O, PO, GO, DO, IO, BO>) {
+  constructor(options: DatabaseOptions) {
     this._options = options
   }
 
@@ -55,9 +55,16 @@ export default class Database<K, V, O, PO, GO, DO, IO, BO> {
     // It seems a not-too-large cache (100) size is the right amount.
     // When higher (say 10000), it seems the benefits wear off.
     // See /perf/transactions.js for a benchmark.
-    let backingStore = this._options.db ? this._options.db : new CacheDOWN<K,V,O,PO,GO,DO,IO,BO>(dataPath, MedeaDOWN).maxSize(100)
+    let dbFactory;
+    if (this._options.db) {
+      let backingStore = this._options.db
+      dbFactory = (location: string) => backingStore
+    } else {
+      dbFactory = (location: string) => CacheDOWN(location, MedeaDOWN).maxSize(100)
+    }
+    
 
-    this._db = LevelUp('', { db: backingStore })
+    this._db = LevelUp(dataPath, { db: dbFactory })
 
     // Blocks, keyed by array index (not necessarily by block number) (0-based)
     this.blocksByNumber = new LevelUpArrayAdapter<ExecutedBlock>("blocks", this._db, executedBlockTransformer)

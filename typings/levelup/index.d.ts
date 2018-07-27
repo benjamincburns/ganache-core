@@ -68,7 +68,7 @@ declare module 'levelup' {
       cacheSize?: number; 
       keyEncoding?: Encoding; 
       valueEncoding?: Encoding; 
-      db?: AbstractLevelDOWN<K, V, O, PO, GO, DO, IO, BO>
+      db?: (location: string) => AbstractLevelDOWN<K, V, O, PO, GO, DO, IO, BO>
     }
 
     interface LevelUpConstructor {
