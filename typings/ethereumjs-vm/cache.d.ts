@@ -4,7 +4,7 @@ declare module 'ethereumjs-vm/dist/cache' {
   import Account from 'ethereumjs-account'
 
   type LargeNumber = string | Buffer | BN
-  type Callback<T> = (err: Error, result: T) => void
+  type Callback<T> = (err: Error | null, result: T) => void
 
   export class Cache {
     constructor(trie: Trie)

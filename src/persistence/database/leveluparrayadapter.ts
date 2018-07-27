@@ -1,108 +1,129 @@
-var Sublevel = require("level-sublevel");
+import * as LevelUp from 'levelup'
+import * as Sublevel from 'level-sublevel'
+
+import { Callback, BidirectionalTransformer } from '../../types/functional'
 
 // Level up adapter that looks like an array. Doesn't support inserts.
 
-function LevelUpArrayAdapter(name, db, serializer) {
-  this.db = Sublevel(db);
-  this.db = this.db.sublevel(name);
-  this.name = name;
-  this.serializer = serializer || {
-    encode: function(val, callback) { callback(null, val); },
-    decode: function(val, callback) { callback(null, val); }
-  };
-};
+export default class LevelUpArrayAdapter<ValueT> {
+  private _db: Sublevel.Sublevel
+  private _serializer: BidirectionalTransformer<ValueT, any>
+  private _name: string
 
-LevelUpArrayAdapter.prototype.length = function(callback) {
-  this.db.get("length", function(err, result) {
-    if (err) {
-      if (err.notFound) {
-        return callback(null, 0);
-      } else {
-        return callback(err);
+  constructor(
+    name: string,
+    db: LevelUp.LevelUp,
+    serializer: BidirectionalTransformer<ValueT, any>,
+  ) {
+    this._db = Sublevel(db).sublevel(name)
+    this._name = name
+    this._serializer = serializer
+  }
+
+  length(callback: Callback<number>) {
+    this._db.get("length", (err, result: number) => {
+      if (err) {
+        if (err.notFound) {
+          return callback(null, 0)
+        } else {
+          return callback(err)
+        }
       }
-    }
 
-    callback(null, result);
-  });
-};
+      callback(null, result)
+    })
+  }
 
-LevelUpArrayAdapter.prototype._get = function(key, callback) {
-  var self = this;
-  this.db.get(key, function(err, val) {
-    if (err) return callback(err);
-    self.serializer.decode(val, callback);
-  });
-};
+  _get(key: number, callback: Callback<ValueT>) {
+    var self = this
+    this._db.get(key + "", (err, val) => {
+      if (err) return callback(err)
+      callback(null, self._serializer.decode(val))
+    })
+  }
 
-LevelUpArrayAdapter.prototype._put = function(key, value, callback) {
-  var self = this;
-  this.serializer.encode(value, function(err, encoded) {
-    if (err) return callback(err);
-    self.db.put(key, encoded, callback);
-  });
-};
+  _put(key: number, value: ValueT, callback: Callback<never>) {
+    let encoded = this._serializer.encode(value)
+    this._db.put(key + "", encoded, callback)
+  }
 
-LevelUpArrayAdapter.prototype.get = function(index, callback) {
-  var self = this;
+  get(index: number, callback: Callback<ValueT>) {
+    var self = this
 
-  this.length(function(err, length) {
-    if (err) return callback(err);
-    if (index >= length) {
-      return callback(new Error("LevelUpArrayAdapter named '" + self.name + "' index out of range: index " + index + "; length: " + length));
-    }
-    self._get(index, callback);
-  });
-};
+    this.length((err, length) => {
+      if (err) return callback(err)
 
-LevelUpArrayAdapter.prototype.push = function(val, callback) {
-  var self = this;
-  this.length(function(err, length) {
-    if (err) return callback(err);
+      if (length) {
+        if (index >= length) {
+          return callback(new Error("LevelUpArrayAdapter named '" + self._name + "' index out of range: index " + index + " length: " + length))
+        }
+        self._get(index, callback)
+      } else {
+        return callback(new Error("Bug! Callback called without error or value"))
+      }
+    })
+  }
 
-    // TODO: Do this in atomic batch.
-    self._put(length + "", val, function(err) {
-      if (err) return callback(err);
-      self.db.put("length", length + 1, callback);
-    });
-  });
-};
+  push(val: ValueT, callback: Callback<never>) {
+    var self = this
+    this.length((err, length) => {
+      if (err) return callback(err)
 
-LevelUpArrayAdapter.prototype.pop = function(callback) {
-  var self = this;
+      if (length) {
+        // TODO: Do this in atomic batch.
+        self._put(length, val, (err) => {
+          if (err) return callback(err)
+          self._db.put("length", length + 1, callback)
+        })
+      } else {
+        return callback(new Error("Bug! Callback called without error or value"))
+      }
+    })
+  }
 
-  this.length(function(err, length) {
-    if (err) return callback(err);
+  pop(callback: Callback<ValueT>) {
+    var self = this
 
-    var newLength = length - 1;
+    this.length((err, length) => {
+      if (err) return callback(err)
 
-    // TODO: Do this in atomic batch.
-    self._get(newLength + "", function(err, val) {
-      if (err) return callback(err);
-      self.db.del(newLength + "", function(err) {
-        if (err) return callback(err);
-        self.db.put("length", newLength, function(err) {
-          if (err) return callback(err);
+      if (length) {
+        var newLength = length - 1
 
-          callback(null, val);
-        });
-      });
-    });
-  });
-};
+        // TODO: Do this in atomic batch.
+        self._get(newLength, (err, val) => {
+          if (err) return callback(err)
+          self._db.del(newLength, (err) => {
+            if (err) return callback(err)
+            self._db.put("length", newLength,(err) => {
+              if (err) return callback(err)
 
-LevelUpArrayAdapter.prototype.last = function(callback) {
-  var self = this;
-  this.length(function(err, length) {
-    if (err) return callback(err);
+              callback(null, val)
+            })
+          })
+        })
+      } else {
+        return callback(new Error("Bug! Callback called without error or value"))
+      }
+    })
+  }
 
-    if (length == 0) return callback(null, null);
+  last(callback: Callback<ValueT | null>) {
+    var self = this
+    this.length((err, length) => {
+      if (err) return callback(err)
 
-    self._get((length - 1) + "", callback);
-  });
-};
+      if (length) {
+        if (length == 0) return callback(null, null)
 
-LevelUpArrayAdapter.prototype.first = function(callback) {
-  this._get("0", callback);
-};
+        self._get((length - 1), callback)
+      } else {
+        return callback(new Error("Bug! Callback called without error or value"))
+      }
+    })
+  }
 
-module.exports = LevelUpArrayAdapter;
+  first(callback: Callback<ValueT>) {
+    this._get(0, callback)
+  }
+}

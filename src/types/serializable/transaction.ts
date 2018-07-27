@@ -2,11 +2,16 @@ import { BN } from 'bn.js'
 import { SerializedBN, toBN, toSerializedBN } from './bn'
 import {
   TransactionSignature,
-  TransactionLog,
   PendingTransaction,
   SignedTransaction,
   ExecutedTransaction
 } from '../transaction'
+
+import {
+  SerializedTransactionLog,
+  toTransactionLog,
+  toSerializedTransactionLog
+} from './log'
 
 export interface SerializedTransactionSignature {
   v: SerializedBN
@@ -30,62 +35,37 @@ export function toSerializedTransactionSignature(input: TransactionSignature): S
   }
 }
 
-export interface SerializedTransactionLog {
-  removed: boolean
-  originatingAddress: SerializedBN
-  data: SerializedBN
-  topics: SerializedBN[]
-}
-
-export function toTransactionLog(input: SerializedTransactionLog) : TransactionLog {
-  return new TransactionLog({
-    removed: input.removed,
-    originatingAddress: toBN(input.originatingAddress),
-    data: toBN(input.data),
-    topics: input.topics.map(toBN)
-  })
-}
-
-export function toSerializedTransactionLog(input: TransactionLog) : SerializedTransactionLog {
-  return {
-    removed: input.removed,
-    originatingAddress: toSerializedBN(input.originatingAddress),
-    data: toSerializedBN(input.data),
-    topics: input.topics.map(toSerializedBN)
-  }
-}
-
 export interface SerializedPendingTransaction {
-  nonce: number
+  nonce: SerializedBN
   from: SerializedBN
   to: SerializedBN
   value: SerializedBN
   gasPrice: SerializedBN
-  gas: SerializedBN
-  input: SerializedBN
+  gasLimit: SerializedBN
+  data: SerializedBN
 }
 
 export function toPendingTransaction(input: SerializedPendingTransaction): PendingTransaction {
   return new PendingTransaction({
-    nonce: input.nonce,
+    nonce: toBN(input.nonce),
     from: toBN(input.from),
     to: toBN(input.to),
     value: toBN(input.value),
     gasPrice: toBN(input.gasPrice),
-    gas: toBN(input.gas),
-    input: toBN(input.input)
+    gasLimit: toBN(input.gasLimit),
+    data: toBN(input.data)
   })
 }
 
 export function toSerializedPendingTransaction(input: PendingTransaction): SerializedPendingTransaction {
   return {
-    nonce: input.nonce,
+    nonce: toSerializedBN(input.nonce),
     from: toSerializedBN(input.from),
     to: toSerializedBN(input.to),
     value: toSerializedBN(input.value),
     gasPrice: toSerializedBN(input.gasPrice),
-    gas: toSerializedBN(input.gas),
-    input: toSerializedBN(input.input)
+    gasLimit: toSerializedBN(input.gasLimit),
+    data: toSerializedBN(input.data)
   }
 }
 
@@ -121,8 +101,8 @@ export function toExecutedTransaction(input: SerializedExecutedTransaction) : Ex
     to: signedTransaction.to,
     value: signedTransaction.value,
     gasPrice: signedTransaction.gasPrice,
-    gas: signedTransaction.gas,
-    input: signedTransaction.input,
+    gasLimit: signedTransaction.gasLimit,
+    data: signedTransaction.data,
     signature: signedTransaction.signature,
     cumulativeGasUsed: toBN(input.cumulativeGasUsed),
     gasUsed: toBN(input.gasUsed),
@@ -139,7 +119,7 @@ export function toSerializedExecutedTransaction(input: ExecutedTransaction) : Se
     cumulativeGasUsed: toSerializedBN(input.cumulativeGasUsed),
     gasUsed: toSerializedBN(input.gasUsed),
     contractAddress: input.contractAddress ? toSerializedBN(input.contractAddress) : null,
-    logs: input.logs.map(toTransactionLog),
+    logs: input.logs.map(toSerializedTransactionLog),
     logsBloom: toSerializedBN(input.logsBloom),
     executedSuccessfully: input.executedSuccessfully
   }

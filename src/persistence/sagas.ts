@@ -1,26 +1,29 @@
 import { BN } from 'bn.js'
-import { IExecutedTransaction } from './transactions'
+import { IExecutedTransaction } from '../types/transaction'
+import { IExecutedBlock } from '../types/block'
 
-function* setBlock(IPersistentBlock) {
-
-}
-
-
-function* getBlockByHash(hash: BN) : IPersistentBlock {
+  /*
+function* setBlock(IExecutedBlock) {
 
 }
 
 
-function* getBlockByNumber(number: BN) : IPersistentBlock {
+function* getBlockByHash(hash: BN) : IExecutedBlock {
 
 }
 
 
-function* writeTransaction(transaction: IPersistentTransaction) {
+function* getBlockByNumber(number: BN) : IExecutedBlock {
 
 }
 
 
-function* getTransactionByHash(hash: BN) : IPersistentTransaction {
+function* writeTransaction(transaction: IExecutedTransaction) {
 
 }
+
+
+function* getTransactionByHash(hash: BN) : IExecutedTransaction {
+
+}
+   */

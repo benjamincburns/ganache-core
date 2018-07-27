@@ -2,7 +2,7 @@ declare module 'merkle-patricia-tree/trieNode' {
   import BN from 'bn.js'
 
   type LargeNumber = string | Buffer | BN
-  type Callback<T> = (err: Error, result: T) => void
+  type Callback<T> = (err: Error | null, result: T) => void
   type NodeType = 'branch' | 'leaf' | 'extension'
   type NibbleArray = number[]
 

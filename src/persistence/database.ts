@@ -1,80 +1,82 @@
-var LevelUpArrayAdapter = require("./database/leveluparrayadapter");
-var LevelUpObjectAdapter = require("./database/levelupobjectadapter");
-var levelup = require('levelup');
-var filedown = require("./database/filedown");
-var cachedown = require("cachedown");
-var Sublevel = require("level-sublevel");
-var Block = require("ethereumjs-block");
-var txserializer = require("./database/txserializer");
-var blockserializer = require("./database/blockserializer");
-var bufferserializer = require("./database/bufferserializer");
-var BlockLogsSerializer = require("./database/blocklogsserializer");
-var ReceiptSerializer = require("./database/receiptserializer");
-var to = require("./utils/to");
-var utils = require("ethereumjs-util");
-var FakeTransaction = require('ethereumjs-tx/fake.js');
-var tmp = require("tmp");
+import { BN } from 'bn.js'
 
-function Database(options) {
-  this.options = options;
-};
+import { AbstractLevelDOWN } from 'abstract-leveldown'
+import * as LevelUp from 'levelup'
+import MedeaDOWN from 'medeadown'
+import { CacheDOWN } from 'cachedown'
+import LevelUpArrayAdapter from './database/leveluparrayadapter'
+import LevelUpObjectAdapter from './database/levelupobjectadapter'
 
-Database.prototype.initialize = function(callback) {
-  var self = this;
+import { ExecutedBlock } from '../types/block'
+import { ExecutedTransaction } from '../types/transaction'
+import { TransactionLog } from '../types/log'
 
-  function getDir(cb) {
-    if (self.options.db_path) {
-      cb(null, self.options.db_path);
-    } else {
-      tmp.dir(cb);
-    }
+import {
+  ArrayTransformer,
+  bnTransformer,
+  bufferTransformer,
+  executedBlockTransformer,
+  executedTransactionTransformer,
+  NullTransformer,
+  transactionLogTransformer
+} from './database/transformers'
+
+import { dir } from 'tmp'
+import * as pify from 'pify'
+
+export interface DatabaseOptions<K=any, V=any, O=any, PO=any, GO=any, DO=any, IO=any, BO=any> {
+  db?: AbstractLevelDOWN<K, V, O, PO, GO, DO, IO, BO>
+  dataPath: string
+}
+
+export default class Database<K, V, O, PO, GO, DO, IO, BO> {
+
+  private _options: DatabaseOptions<K, V, O, PO, GO, DO, IO, BO>
+  private _db: LevelUp.LevelUp
+
+  blocksByNumber: LevelUpArrayAdapter<ExecutedBlock>
+  logsByBlock: LevelUpArrayAdapter<TransactionLog[]>
+  blockHashes: LevelUpObjectAdapter<BN, number>
+  transactions: LevelUpObjectAdapter<BN, ExecutedTransaction>
+  trieDb: LevelUpObjectAdapter<Buffer, Buffer>
+
+  constructor(options: DatabaseOptions<K, V, O, PO, GO, DO, IO, BO>) {
+    this._options = options
   }
 
-  getDir(function(err, directory) {
-    if (err) return callback(err);
+  async initialize() {
+    let dataPath = this._options.dataPath
 
-    levelup(directory, {
-      valueEncoding: "json",
-      db: function (location) {
-        if (self.options.db) return self.options.db;
+    if (!dataPath) {
+      dataPath = await pify(dir)()
+    }
 
-        // This cache size was chosen from a plethora of hand testing.
-        // It seems a not-too-large cache (100) size is the right amount.
-        // When higher (say 10000), it seems the benefits wear off.
-        // See /perf/transactions.js for a benchmark.
-        return cachedown(location, filedown).maxSize(100);
-      }
-    }, finishInitializing)
-  });
+    // This cache size was chosen from a plethora of hand testing.
+    // It seems a not-too-large cache (100) size is the right amount.
+    // When higher (say 10000), it seems the benefits wear off.
+    // See /perf/transactions.js for a benchmark.
+    let backingStore = this._options.db ? this._options.db : new CacheDOWN<K,V,O,PO,GO,DO,IO,BO>(dataPath, MedeaDOWN).maxSize(100)
 
-  function finishInitializing(err, db) {
-    if (err) return callback(err);
-
-    self.db = db;
+    this._db = LevelUp('', { db: backingStore })
 
     // Blocks, keyed by array index (not necessarily by block number) (0-based)
-    self.blocks = new LevelUpArrayAdapter("blocks", self.db, blockserializer);
+    this.blocksByNumber = new LevelUpArrayAdapter<ExecutedBlock>("blocks", this._db, executedBlockTransformer)
 
     // Logs triggered in each block, keyed by block id (ids in the blocks array; not necessarily block number) (0-based)
-    self.blockLogs = new LevelUpArrayAdapter("blockLogs", self.db, new BlockLogsSerializer(self));
+    this.logsByBlock = new LevelUpArrayAdapter<TransactionLog[]>("blockLogs", this._db, new ArrayTransformer(transactionLogTransformer))
 
     // Block hashes -> block ids (ids in the blocks array; not necessarily block number) for quick lookup
-    self.blockHashes = new LevelUpObjectAdapter("blockHashes", self.db);
+    this.blockHashes = new LevelUpObjectAdapter<BN, number>("blockHashes", this._db, new NullTransformer<number>(), bnTransformer )
 
     // Transaction hash -> transaction objects
-    self.transactions = new LevelUpObjectAdapter("transactions", self.db, txserializer);
+    this.transactions = new LevelUpObjectAdapter<BN, ExecutedTransaction>("transactions", this._db, executedTransactionTransformer, bnTransformer)
 
-    // Transaction hash -> transaction receipts
-    self.transactionReceipts = new LevelUpObjectAdapter("transactionReceipts", self.db, new ReceiptSerializer(self));
+    this.trieDb = new LevelUpObjectAdapter<Buffer, Buffer>("trie_db", this._db, bufferTransformer, bufferTransformer)
+  }
 
-    self.trie_db = new LevelUpObjectAdapter("trie_db", self.db, bufferserializer, bufferserializer);
+  async close() {
+    await this._db.close()
+  }
+}
 
-    callback();
-  };
-};
-
-Database.prototype.close = function(callback) {
-  callback();
-};
-
-module.exports = Database;
+module.exports = Database

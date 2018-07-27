@@ -1,6 +1,10 @@
 import { BN } from 'bn.js'
 
+import EJSFakeTransaction from 'ethereumjs-tx/fake'
+import EJSTransaction from 'ethereumjs-tx'
+
 import { Account } from './account'
+import { ITransactionLog, TransactionLog } from './log'
 
 export interface ITransactionSignature {
   v: BN
@@ -23,47 +27,24 @@ export interface ITransactionSigner {
   signTransaction(input: IPendingTransaction) : TransactionSignature
 }
 
-export interface ITransactionLog {
-  removed: boolean
-  originatingAddress: BN
-  data: BN
-  topics: BN[]
-}
-
-export class TransactionLog implements ITransactionLog {
-  removed: boolean
-  originatingAddress: BN
-  data: BN
-  topics: BN[]
-
-  constructor(log: TransactionLog) {
-    this.removed = log.removed
-    this.originatingAddress = log.originatingAddress
-    this.data = log.data
-    this.topics = log.topics
-  }
-
-  //TODO: add filter tests here
-}
-
 export interface IPendingTransaction {
-  nonce: number
+  nonce: BN
   from: BN
   to: BN
   value: BN
   gasPrice: BN
-  gas: BN
-  input: BN
+  gasLimit: BN
+  data: BN
 }
 
 export class PendingTransaction implements IPendingTransaction {
-  nonce: number
+  nonce: BN
   from: BN
   to: BN
   value: BN
   gasPrice: BN
-  gas: BN
-  input: BN
+  gasLimit: BN
+  data: BN
 
   private _hash: BN
 
@@ -73,13 +54,20 @@ export class PendingTransaction implements IPendingTransaction {
     this.to = tx.to
     this.value = tx.value
     this.gasPrice = tx.gasPrice
-    this.gas = tx.gas
-    this.input = tx.input
+    this.gasLimit = tx.gasLimit
+    this.data = tx.data
   }
 
   get hash() : BN {
-    //TODO: calculate transaction hash
-    return new BN(1)
+    return new BN(this.toFakeTransaction().hash())
+  }
+
+  toFakeTransaction(): EJSFakeTransaction {
+    return new EJSFakeTransaction(this)
+  }
+
+  toEJSTransaction(): EJSTransaction {
+    return new EJSTransaction(this)
   }
 }
 
@@ -104,6 +92,21 @@ export class SignedTransaction extends PendingTransaction implements SignedTrans
     }
   }
 
+  toEJSTransaction(): EJSTransaction {
+    let { nonce, to, value, gasPrice, gasLimit, data } = this
+    let { v, r, s } = this.signature
+    return new EJSTransaction({
+      nonce,
+      to,
+      value,
+      gasPrice,
+      gasLimit,
+      data,
+      v,
+      r,
+      s
+    })
+  }
 }
 
 export interface IExecutedTransaction extends ISignedTransaction {

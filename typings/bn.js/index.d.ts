@@ -11,7 +11,7 @@ declare module 'bn.js' {
 
     constructor(number: BNInput, base?: number, endian?: Endianness)
     clone(): BN
-    toString(base?: number, length?: number): string
+    toString(base?: number|string, length?: number): string
     toNumber(): number
     toJSON(): string
     toArray(endian?: Endianness, length?: number): number[]

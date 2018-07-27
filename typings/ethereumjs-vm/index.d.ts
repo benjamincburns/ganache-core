@@ -8,7 +8,7 @@ declare module 'ethereumjs-vm' {
   import { EventEmitter} from 'events'
 
   type LargeNumber = string | Buffer | BN
-  type Callback<T> = (err: Error, result: T) => void
+  type Callback<T> = (err: Error | null, result: T) => void
 
   export interface VMOptions {
     activatePrecompiles: boolean
@@ -88,6 +88,7 @@ declare module 'ethereumjs-vm' {
   }
 
   export class VM extends EventEmitter {
+    stateManager: StateManager
     constructor(opts: VMOptions)
     runBlock(opts: RunBlockOptions, cb: Callback<RunBlockResult[]>): void
     runBlockchain(blockchain: Blockchain, cb: Callback<RunBlockResult[]>): void

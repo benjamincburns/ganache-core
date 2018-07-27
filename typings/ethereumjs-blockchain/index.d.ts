@@ -4,7 +4,7 @@ declare module 'ethereumjs-blockchain' {
   import { Block } from 'ethereumjs-block'
 
   type BlockTag = Buffer | BN | number
-  type Callback<T> = (err: Error, result: T) => void
+  type Callback<T> = (err: Error | null, result: T) => void
   type OnBlock = (block: Block, reorg: boolean, cb: Callback<never>) => void
 
   export interface BlockchainOptions {

@@ -1,93 +1,100 @@
-var Sublevel = require("level-sublevel");
-var async = require("async");
+import * as Sublevel from 'level-sublevel'
+import * as LevelUp from 'levelup'
+import * as pify from 'pify'
 
-function LevelUpObjectAdapter(name, db, valueserializer, keyserializer, options) {
-  this.db = Sublevel(db, options);
-  this.db = this.db.sublevel(name);
-  this.name = name;
-  this.valueserializer = valueserializer || {
-    encode: function(val, callback) { callback(null, val); },
-    decode: function(val, callback) { callback(null, val); }
-  };
-  this.keyserializer = keyserializer || {
-    encode: function(val, callback) { callback(null, val); },
-    decode: function(val, callback) { callback(null, val); }
-  };
-};
+import { Callback, BidirectionalTransformer } from '../../types/functional'
 
-LevelUpObjectAdapter.prototype.get = function(key, options, callback) {
-  var self = this;
-
-  if (typeof options == "function") {
-    callback = options;
-    options = {};
-  }
-
-  this.keyserializer.encode(key, function(err, encodedKey) {
-    if (err) return callback(err);
-
-    self.db.get(encodedKey, function(err, val) {
-      if (err) return callback(err);
-
-      self.valueserializer.decode(val, function(err, decodedValue) {
-        if (err) return callback(err);
-
-        callback(null, decodedValue);
-      });
-    });
-  });
-};
-
-LevelUpObjectAdapter.prototype.put = function(key, value, options, callback) {
-  var self = this;
-
-  if (typeof options == "function") {
-    callback = options;
-    options = {};
-  }
-
-  this.keyserializer.encode(key, function(err, encodedKey) {
-    if (err) return callback(err);
-
-    self.valueserializer.encode(value, function(err, encoded) {
-      if (err) return callback(err);
-
-      self.db.put(encodedKey, encoded, callback);
-    });
-  });
-};
-
-LevelUpObjectAdapter.prototype.set = LevelUpObjectAdapter.prototype.put;
-
-LevelUpObjectAdapter.prototype.del = function(key, callback) {
-  var self = this;
-
-  this.keyserializer.encode(key, function(err, encodedKey) {
-    if (err) return callback(err);
-
-    self.db.del(encodedKey, callback);
-  });
+export interface BatchOperation<KeyT, ValueT> {
+  type: 'put' | 'del'
+  key: KeyT
+  value?: ValueT
 }
 
-LevelUpObjectAdapter.prototype.batch = function(array, options, callback) {
-  var self = this;
+export default class LevelUpObjectAdapter<KeyT, ValueT> {
 
-  async.each(array, function(item, finished) {
-    if (item.type == "put") {
-      self.put(item.key, item.value, options, finished);
-    } else if (item.type == "del") {
-      self.del(item.key, finished);
-    } else {
-      finished(new Error("Unknown batch type", item.type));
+  name: string
+  private _db: Sublevel.Sublevel
+  private _keySerializer: BidirectionalTransformer<KeyT, any>
+  private _valueSerializer: BidirectionalTransformer<ValueT, any>
+
+  constructor(
+    name: string,
+    db: LevelUp.LevelUp,
+    valueSerializer: BidirectionalTransformer<ValueT, any>,
+    keySerializer: BidirectionalTransformer<KeyT, any>,
+  ) {
+    this._db = Sublevel(db).sublevel(name)
+    this.name = name
+    this._keySerializer = keySerializer
+    this._valueSerializer = valueSerializer
+  }
+
+
+  get(key: KeyT, options: any, callback: Callback<ValueT>) {
+    var self = this
+
+    if (options instanceof Function) {
+      callback = options
+      options = {}
     }
-  }, function(err) {
-    if (err) return callback(err);
-    callback();
-  });
-};
 
-LevelUpObjectAdapter.prototype.isOpen = function() {
-  return true;
+    let encodedKey = this._keySerializer.encode(key)
+
+    self._db.get(encodedKey, (err, val) => {
+      if (err) return callback(err)
+
+      let decodedValue = self._valueSerializer.decode(val)
+
+      callback(null, decodedValue)
+    })
+  }
+
+  put(key: KeyT, value: ValueT, options: any, callback: Callback<never>) {
+    var self = this
+
+    if (options instanceof Function) {
+      callback = options
+      options = {}
+    }
+
+    let encodedKey = this._keySerializer.encode(key)
+    let encodedValue = self._valueSerializer.encode(value)
+    self._db.put(encodedKey, encodedValue, callback)
+  }
+
+  set(key: KeyT, value: ValueT, options: any, callback: Callback<never>) {
+    this.put(key, value, options, callback)
+  }
+
+  del(key: KeyT, callback: Callback<never>) {
+    var self = this
+
+    let encodedKey = this._keySerializer.encode(key)
+    self._db.del(encodedKey, callback)
+  }
+
+  isOpen() {
+    return true
+  }
+
+  batch(operations: BatchOperation<KeyT, ValueT>[], options: any, callback: Callback<never>) {
+    this._asyncBatch(operations, options)
+      .then(() => callback(null))
+      .catch((err) => callback(err))
+  }
+
+  private async _asyncBatch(operations: BatchOperation<KeyT, ValueT>[], options: any) {
+    const _put = pify(this.put)
+    const _del = pify(this.del)
+
+    for (let operation of operations) {
+      if (operation.type == "put") {
+        await _put(operation.key, operation.value, options)
+      } else if (operation.type == "del") {
+        await _del(operation.key)
+      } else {
+        throw new Error("Unknown batch type " + operation.type)
+      }
+    }
+  }
 }
-
-module.exports = LevelUpObjectAdapter;

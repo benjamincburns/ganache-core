@@ -1,7 +1,13 @@
-import { IBlock } from './model/block'
+import { Block } from './model/block'
 import { BN } from 'bn.js'
 
-export interface IBlockChain {
-  getBlockByHash(hash: BN): IBlock
-  getBlockHashForNumberOrTag(number: number | string): BN
+export class Blockchain {
+  async getBlockByNumber(number: BN): Block {
+    throw new Error("not yet implemented")
+  }
+
+  async getBlockByHash(hash: BN): Block {
+    throw new Error("not yet implemented")
+  }
+
 }

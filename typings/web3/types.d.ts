@@ -16,7 +16,7 @@ export declare interface JsonRPCResponse {
   error?: string
 }
 
-type Callback<T> = (error: Error, result: T) => void
+type Callback<T> = (error: Error | null, result: T) => void
 type ABIDataTypes = "uint256" | "boolean" | "string" | "bytes" | string // TODO complete list
 type PromiEventType = "transactionHash" | "receipt" | "confirmation" | "error"
 export declare interface PromiEvent<T> extends Promise<T> {

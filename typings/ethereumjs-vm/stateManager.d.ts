@@ -6,7 +6,7 @@ declare module 'ethereumjs-vm/dist/stateManager' {
   import Cache from 'ethereumjs-vm/dist/cache'
 
   type LargeNumber = string | Buffer | BN
-  type Callback<T> = (err: Error, result: T) => void
+  type Callback<T> = (err: Error | null, result: T) => void
 
   export interface MinimalBlockchain {
     getBlock(blockTag: Buffer, cb: Callback<Block>): void

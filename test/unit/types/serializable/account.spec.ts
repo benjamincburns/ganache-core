@@ -16,7 +16,8 @@ describe('types/serializable/account.ts', () => {
   let testAccount = new Account({
     address: new BN(1),
     publicKey: new BN(2),
-    privateKey: new BN(3)
+    privateKey: new BN(3),
+    balance: new BN(4)
   })
 
   describe('#toAccount', () => {
@@ -25,6 +26,7 @@ describe('types/serializable/account.ts', () => {
         address: toSerializedBN(new BN(1)),
         publicKey: toSerializedBN(new BN(2)),
         privateKey: toSerializedBN(new BN(3)),
+        balance: toSerializedBN(new BN(4))
       }
 
       let resultAccount = toAccount(serializedAccount)
@@ -39,6 +41,7 @@ describe('types/serializable/account.ts', () => {
       assert.deepEqual(toBN(serializedAccount.address), testAccount.address)
       assert.deepEqual(toBN(serializedAccount.publicKey), testAccount.publicKey)
       assert.deepEqual(toBN(serializedAccount.privateKey), testAccount.privateKey)
+      assert.deepEqual(toBN(serializedAccount.balance), testAccount.balance)
     })
   })
 })

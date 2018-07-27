@@ -5,7 +5,7 @@ declare module 'ethereumjs-block/header' {
   import { Blockchain } from 'ethereumjs-blockchain'
 
   type LargeNumber = string | Buffer | BN
-  type Callback<T> = (err: Error, result: T) => void
+  type Callback<T> = (err: Error | null, result: T) => void
 
   export interface IBlockHeader {
     parentHash: Buffer

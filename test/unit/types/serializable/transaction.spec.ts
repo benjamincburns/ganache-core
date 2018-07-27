@@ -6,20 +6,19 @@ import { SerializedBN, toBN, toSerializedBN } from '../../../../lib/types/serial
 
 import {
   TransactionSignature,
-  TransactionLog,
   PendingTransaction,
   SignedTransaction,
   ExecutedTransaction
 } from '../../../../lib/types/transaction'
 
+import { TransactionLog } from '../../../../lib/types/log'
+
+import { toTransactionLog } from '../../../../lib/types/serializable/log'
+
 import {
   SerializedTransactionSignature,
   toTransactionSignature,
   toSerializedTransactionSignature,
-
-  SerializedTransactionLog,
-  toTransactionLog,
-  toSerializedTransactionLog,
 
   SerializedPendingTransaction,
   toPendingTransaction,
@@ -49,13 +48,13 @@ describe('types/serializable/transaction.ts', () => {
   })
 
   let testPendingTransaction : PendingTransaction = new PendingTransaction({
-    nonce: 1234,
-    from: new BN(1),
-    to: new BN(2),
-    value: new BN(3),
-    gasPrice: new BN(4),
-    gas: new BN(5),
-    input: new BN(6)
+    nonce: new BN(1),
+    from: new BN(2),
+    to: new BN(3),
+    value: new BN(4),
+    gasPrice: new BN(5),
+    gasLimit: new BN(6),
+    data: new BN(7)
   })
 
   let testSignedTransaction : SignedTransaction = new SignedTransaction(testPendingTransaction, testTransactionSignature)
@@ -66,14 +65,14 @@ describe('types/serializable/transaction.ts', () => {
     to: testSignedTransaction.to,
     value: testSignedTransaction.value,
     gasPrice: testSignedTransaction.gasPrice,
-    gas: testSignedTransaction.gas,
-    input: testSignedTransaction.input,
+    gasLimit: testSignedTransaction.gasLimit,
+    data: testSignedTransaction.data,
     signature: testSignedTransaction.signature,
-    cumulativeGasUsed: new BN(1),
-    gasUsed: new BN(2),
-    contractAddress: new BN(3),
+    cumulativeGasUsed: new BN(8),
+    gasUsed: new BN(9),
+    contractAddress: new BN(10),
     logs: [ testTransactionLog ],
-    logsBloom: new BN(4),
+    logsBloom: new BN(11),
     executedSuccessfully: true
   })
 
@@ -100,31 +99,6 @@ describe('types/serializable/transaction.ts', () => {
     })
   })
 
-  describe('#toSerializedTransactionLog', () => {
-    it('should create a SerializedTransactionLog correctly', () => {
-      const serializedTransactionLog = toSerializedTransactionLog(testTransactionLog)
-      assert.deepEqual(serializedTransactionLog.removed, testTransactionLog.removed)
-      assert.deepEqual(toBN(serializedTransactionLog.originatingAddress), testTransactionLog.originatingAddress)
-      assert.deepEqual(toBN(serializedTransactionLog.data), testTransactionLog.data)
-      assert.deepEqual(serializedTransactionLog.topics.map(toBN), testTransactionLog.topics)
-    })
-  })
-
-  describe('#toTransactionLog', () => {
-    it ('should create a proper TransactionLog from a SerializedTransactionLog', () => {
-      const serializedTransactionLog : SerializedTransactionLog = {
-        removed: true,
-        originatingAddress: toSerializedBN(new BN(1)),
-        data: toSerializedBN(new BN(2)),
-        topics: [toSerializedBN(new BN(3))]
-      }
-
-      let resultTransactionLog : TransactionLog = toTransactionLog(serializedTransactionLog)
-
-      assert.deepEqual(resultTransactionLog, testTransactionLog)
-    })
-  })
-
   describe('#toSerializedPendingTransaction', () => {
     it('should create a SerializedPendingTransaction correctly', () => {
       const serializedPendingTransaction = toSerializedPendingTransaction(testPendingTransaction)
@@ -132,21 +106,21 @@ describe('types/serializable/transaction.ts', () => {
       assert.deepEqual(toBN(serializedPendingTransaction.to), testPendingTransaction.to)
       assert.deepEqual(toBN(serializedPendingTransaction.value), testPendingTransaction.value)
       assert.deepEqual(toBN(serializedPendingTransaction.gasPrice), testPendingTransaction.gasPrice)
-      assert.deepEqual(toBN(serializedPendingTransaction.gas), testPendingTransaction.gas)
-      assert.deepEqual(toBN(serializedPendingTransaction.input), testPendingTransaction.input)
+      assert.deepEqual(toBN(serializedPendingTransaction.gasLimit), testPendingTransaction.gasLimit)
+      assert.deepEqual(toBN(serializedPendingTransaction.data), testPendingTransaction.data)
     })
   })
 
   describe('#toPendingTransaction', () => {
     it ('should create a proper PendingTransaction from a SerializedPendingTransaction', () => {
       const serializedPendingTransaction : SerializedPendingTransaction = {
-        nonce: 1234,
-        from: toSerializedBN(new BN(1)),
-        to: toSerializedBN(new BN(2)),
-        value: toSerializedBN(new BN(3)),
-        gasPrice: toSerializedBN(new BN(4)),
-        gas: toSerializedBN(new BN(5)),
-        input: toSerializedBN(new BN(6))
+        nonce: toSerializedBN(new BN(1)),
+        from: toSerializedBN(new BN(2)),
+        to: toSerializedBN(new BN(3)),
+        value: toSerializedBN(new BN(4)),
+        gasPrice: toSerializedBN(new BN(5)),
+        gasLimit: toSerializedBN(new BN(6)),
+        data: toSerializedBN(new BN(7))
       }
 
       let resultPendingTransaction : PendingTransaction = toPendingTransaction(serializedPendingTransaction)
@@ -162,8 +136,8 @@ describe('types/serializable/transaction.ts', () => {
       assert.deepEqual(toBN(serializedSignedTransaction.to), testSignedTransaction.to)
       assert.deepEqual(toBN(serializedSignedTransaction.value), testSignedTransaction.value)
       assert.deepEqual(toBN(serializedSignedTransaction.gasPrice), testSignedTransaction.gasPrice)
-      assert.deepEqual(toBN(serializedSignedTransaction.gas), testSignedTransaction.gas)
-      assert.deepEqual(toBN(serializedSignedTransaction.input), testSignedTransaction.input)
+      assert.deepEqual(toBN(serializedSignedTransaction.gasLimit), testSignedTransaction.gasLimit)
+      assert.deepEqual(toBN(serializedSignedTransaction.data), testSignedTransaction.data)
       assert.deepEqual(toBN(serializedSignedTransaction.signature.v), testSignedTransaction.signature.v)
       assert.deepEqual(toBN(serializedSignedTransaction.signature.r), testSignedTransaction.signature.r)
       assert.deepEqual(toBN(serializedSignedTransaction.signature.s), testSignedTransaction.signature.s)
@@ -173,13 +147,13 @@ describe('types/serializable/transaction.ts', () => {
   describe('#toSignedTransaction', () => {
     it ('should create a proper SignedTransaction from a SerializedSignedTransaction', () => {
       const serializedSignedTransaction : SerializedSignedTransaction = {
-        nonce: 1234,
-        from: toSerializedBN(new BN(1)),
-        to: toSerializedBN(new BN(2)),
-        value: toSerializedBN(new BN(3)),
-        gasPrice: toSerializedBN(new BN(4)),
-        gas: toSerializedBN(new BN(5)),
-        input: toSerializedBN(new BN(6)),
+        nonce: toSerializedBN(new BN(1)),
+        from: toSerializedBN(new BN(2)),
+        to: toSerializedBN(new BN(3)),
+        value: toSerializedBN(new BN(4)),
+        gasPrice: toSerializedBN(new BN(5)),
+        gasLimit: toSerializedBN(new BN(6)),
+        data: toSerializedBN(new BN(7)),
         signature: {
           v: toSerializedBN(new BN(1)),
           r: toSerializedBN(new BN(2)),
@@ -200,8 +174,8 @@ describe('types/serializable/transaction.ts', () => {
       assert.deepEqual(toBN(serializedExecutedTransaction.to), testExecutedTransaction.to)
       assert.deepEqual(toBN(serializedExecutedTransaction.value), testExecutedTransaction.value)
       assert.deepEqual(toBN(serializedExecutedTransaction.gasPrice), testExecutedTransaction.gasPrice)
-      assert.deepEqual(toBN(serializedExecutedTransaction.gas), testExecutedTransaction.gas)
-      assert.deepEqual(toBN(serializedExecutedTransaction.input), testExecutedTransaction.input)
+      assert.deepEqual(toBN(serializedExecutedTransaction.gasLimit), testExecutedTransaction.gasLimit)
+      assert.deepEqual(toBN(serializedExecutedTransaction.data), testExecutedTransaction.data)
       assert.deepEqual(toBN(serializedExecutedTransaction.signature.v), testExecutedTransaction.signature.v)
       assert.deepEqual(toBN(serializedExecutedTransaction.signature.r), testExecutedTransaction.signature.r)
       assert.deepEqual(toBN(serializedExecutedTransaction.signature.s), testExecutedTransaction.signature.s)
@@ -217,23 +191,23 @@ describe('types/serializable/transaction.ts', () => {
   describe('#toExecutedTransaction', () => {
     it ('should create a proper ExecutedTransaction from a SerializedExecutedTransaction', () => {
       const serializedExecutedTransaction : SerializedExecutedTransaction = {
-        nonce: 1234,
-        from: toSerializedBN(new BN(1)),
-        to: toSerializedBN(new BN(2)),
-        value: toSerializedBN(new BN(3)),
-        gasPrice: toSerializedBN(new BN(4)),
-        gas: toSerializedBN(new BN(5)),
-        input: toSerializedBN(new BN(6)),
+        nonce: toSerializedBN(new BN(1)),
+        from: toSerializedBN(new BN(2)),
+        to: toSerializedBN(new BN(3)),
+        value: toSerializedBN(new BN(4)),
+        gasPrice: toSerializedBN(new BN(5)),
+        gasLimit: toSerializedBN(new BN(6)),
+        data: toSerializedBN(new BN(7)),
         signature: {
           v: toSerializedBN(new BN(1)),
           r: toSerializedBN(new BN(2)),
           s: toSerializedBN(new BN(3))
         },
-        cumulativeGasUsed: toSerializedBN(new BN(1)),
-        gasUsed: toSerializedBN(new BN(2)),
-        contractAddress: toSerializedBN(new BN(3)),
+        cumulativeGasUsed: toSerializedBN(new BN(8)),
+        gasUsed: toSerializedBN(new BN(9)),
+        contractAddress: toSerializedBN(new BN(10)),
         logs: [ testTransactionLog ],
-        logsBloom: toSerializedBN(new BN(4)),
+        logsBloom: toSerializedBN(new BN(11)),
         executedSuccessfully: true
       }
 

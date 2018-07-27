@@ -3,7 +3,7 @@ declare module 'ethereumjs-account' {
   import Trie from 'merkle-patricia-tree/baseTrie'
 
   type LargeNumber = string | Buffer | BN
-  type Callback<T> = (err: Error, result: T) => void
+  type Callback<T> = (err: Error | null, result: T) => void
 
   export interface IAccount {
     nonce: Buffer
