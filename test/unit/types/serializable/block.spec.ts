@@ -74,7 +74,7 @@ describe('types/serializable/block.ts', () => {
       assert.deepEqual(toBN(<BN>serializedBlock.totalDifficulty), testPendingBlock.totalDifficulty)
       assert.deepEqual(toBN(<BN>serializedBlock.extraData), testPendingBlock.extraData)
       assert.deepEqual(toBN(<BN>serializedBlock.gasLimit), testPendingBlock.gasLimit)
-      assert.deepEqual(serializedBlock.timestamp, testPendingBlock.timestamp)
+      assert.deepEqual(serializedBlock.timestamp, testPendingBlock.timestamp.toISOString())
       assert.deepEqual(serializedBlock.transactions.map(toSignedTransaction), testPendingBlock.transactions)
     })
   })
@@ -93,7 +93,7 @@ describe('types/serializable/block.ts', () => {
         totalDifficulty: toSerializedBN(new BN(8)),
         extraData: toSerializedBN(new BN(9)),
         gasLimit: toSerializedBN(new BN(10)),
-        timestamp: new Date('January 1, 1970 00:00:01'),
+        timestamp: (new Date('January 1, 1970 00:00:01')).toISOString(),
         transactions: []
       }
 
@@ -116,7 +116,7 @@ describe('types/serializable/block.ts', () => {
       assert.deepEqual(toBN(<BN>serializedBlock.totalDifficulty), testExecutedBlock.totalDifficulty)
       assert.deepEqual(toBN(<BN>serializedBlock.extraData), testExecutedBlock.extraData)
       assert.deepEqual(toBN(<BN>serializedBlock.gasLimit), testExecutedBlock.gasLimit)
-      assert.deepEqual(serializedBlock.timestamp, testExecutedBlock.timestamp)
+      assert.deepEqual(serializedBlock.timestamp, testExecutedBlock.timestamp.toISOString())
       assert.deepEqual(serializedBlock.transactions.map(toExecutedTransaction), testExecutedBlock.transactions)
       assert.deepEqual(serializedBlock.uncleHashes.map(toBN), testExecutedBlock.uncleHashes)
     })
@@ -136,7 +136,7 @@ describe('types/serializable/block.ts', () => {
         totalDifficulty: toSerializedBN(new BN(8)),
         extraData: toSerializedBN(new BN(9)),
         gasLimit: toSerializedBN(new BN(10)),
-        timestamp: new Date('January 1, 1970 00:00:01'),
+        timestamp: (new Date('January 1, 1970 00:00:01')).toISOString(),
         transactions: [],
         uncleHashes: [ new BN(11) ]
       }

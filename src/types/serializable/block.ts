@@ -24,7 +24,7 @@ export interface SerializedPendingBlock {
   totalDifficulty: SerializedBN
   extraData: SerializedBN
   gasLimit: SerializedBN
-  timestamp: Date
+  timestamp: string
   transactions: SerializedSignedTransaction[]
 }
 
@@ -41,7 +41,7 @@ export function toPendingBlock(input: SerializedPendingBlock): PendingBlock {
     totalDifficulty: toBN(input.totalDifficulty),
     extraData: toBN(input.extraData),
     gasLimit: toBN(input.gasLimit),
-    timestamp: input.timestamp,
+    timestamp: new Date(input.timestamp),
     transactions: input.transactions.map(toSignedTransaction)
   })
 }
@@ -59,7 +59,7 @@ export function toSerializedPendingBlock(input: PendingBlock): SerializedPending
     totalDifficulty: toSerializedBN(input.totalDifficulty),
     extraData: toSerializedBN(input.extraData),
     gasLimit: toSerializedBN(input.gasLimit),
-    timestamp: input.timestamp,
+    timestamp: input.timestamp.toISOString(),
     transactions: input.transactions.map(toSerializedSignedTransaction)
   }
 }
@@ -82,7 +82,7 @@ export function toExecutedBlock(input: SerializedExecutedBlock): ExecutedBlock {
     totalDifficulty: toBN(input.totalDifficulty),
     extraData: toBN(input.extraData),
     gasLimit: toBN(input.gasLimit),
-    timestamp: input.timestamp,
+    timestamp: new Date(input.timestamp),
     transactions: input.transactions.map(toExecutedTransaction),
     uncleHashes: input.uncleHashes.map(toBN)
   })
@@ -101,7 +101,7 @@ export function toSerializedExecutedBlock(input: ExecutedBlock): SerializedExecu
     totalDifficulty: toSerializedBN(input.totalDifficulty),
     extraData: toSerializedBN(input.extraData),
     gasLimit: toSerializedBN(input.gasLimit),
-    timestamp: input.timestamp,
+    timestamp: input.timestamp.toISOString(),
     transactions: input.transactions.map(toSerializedExecutedTransaction),
     uncleHashes: input.uncleHashes.map(toSerializedBN)
   }

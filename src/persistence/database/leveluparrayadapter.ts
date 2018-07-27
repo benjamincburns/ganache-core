@@ -1,7 +1,8 @@
 import * as LevelUp from 'levelup'
 import * as Sublevel from 'level-sublevel'
+import * as pify from 'pify'
 
-import { Callback, BidirectionalTransformer } from '../../types/functional'
+import { BidirectionalTransformer } from '../../types/functional'
 
 // Level up adapter that looks like an array. Doesn't support inserts.
 
@@ -20,110 +21,67 @@ export default class LevelUpArrayAdapter<ValueT> {
     this._serializer = serializer
   }
 
-  length(callback: Callback<number>) {
-    this._db.get("length", (err, result: number) => {
-      if (err) {
-        if (err.notFound) {
-          return callback(null, 0)
-        } else {
-          return callback(err)
-        }
-      }
-
-      callback(null, result)
-    })
+  async length() {
+    try {
+      let val = await pify(this._db.get)("length")
+      return parseInt(val as string)
+    } catch (err) {
+      if (err.notFound) {
+        return 0
+      } else throw err
+    }
   }
 
-  _get(key: number, callback: Callback<ValueT>) {
-    var self = this
-    this._db.get(key + "", (err, val) => {
-      if (err) return callback(err)
-      callback(null, self._serializer.decode(val))
-    })
+  async _get(key: number) {
+    return this._serializer.decode(
+      JSON.parse(
+        await pify(this._db.get)(key + "")
+      )
+    )
   }
 
-  _put(key: number, value: ValueT, callback: Callback<never>) {
-    let encoded = this._serializer.encode(value)
-    this._db.put(key + "", encoded, callback)
+  async _put(key: number, value: ValueT) {
+    let encoded = JSON.stringify(this._serializer.encode(value))
+    return await pify(this._db.put)(key + "", encoded)
   }
 
-  get(index: number, callback: Callback<ValueT>) {
-    var self = this
+  async get(index: number) {
+    let length = await this.length()
 
-    this.length((err, length) => {
-      if (err) return callback(err)
+    if (index >= length) {
+      throw new Error("LevelUpArrayAdapter named '" + this._name + "' index out of range: index " + index + " length: " + length)
+    }
 
-      if (length) {
-        if (index >= length) {
-          return callback(new Error("LevelUpArrayAdapter named '" + self._name + "' index out of range: index " + index + " length: " + length))
-        }
-        self._get(index, callback)
-      } else {
-        return callback(new Error("Bug! Callback called without error or value"))
-      }
-    })
+    return await this._get(index)
   }
 
-  push(val: ValueT, callback: Callback<never>) {
-    var self = this
-    this.length((err, length) => {
-      if (err) return callback(err)
+  async push(val: ValueT) {
+    let length = await this.length()
 
-      if (length) {
-        // TODO: Do this in atomic batch.
-        self._put(length, val, (err) => {
-          if (err) return callback(err)
-          self._db.put("length", length + 1, callback)
-        })
-      } else {
-        return callback(new Error("Bug! Callback called without error or value"))
-      }
-    })
+    // TODO: Do this in atomic batch.
+    await this._put(length, val)
+    await pify(this._db.put)("length", length + 1)
   }
 
-  pop(callback: Callback<ValueT>) {
-    var self = this
+  async pop() {
+    let length = await this.length()
+    var newLength = length - 1
 
-    this.length((err, length) => {
-      if (err) return callback(err)
-
-      if (length) {
-        var newLength = length - 1
-
-        // TODO: Do this in atomic batch.
-        self._get(newLength, (err, val) => {
-          if (err) return callback(err)
-          self._db.del(newLength, (err) => {
-            if (err) return callback(err)
-            self._db.put("length", newLength,(err) => {
-              if (err) return callback(err)
-
-              callback(null, val)
-            })
-          })
-        })
-      } else {
-        return callback(new Error("Bug! Callback called without error or value"))
-      }
-    })
+    // TODO: Do this in atomic batch.
+    let val = await this._get(newLength)
+    await pify(this._db.del)(newLength)
+    await pify(this._db.put)("length", newLength)
+    return val
   }
 
-  last(callback: Callback<ValueT | null>) {
-    var self = this
-    this.length((err, length) => {
-      if (err) return callback(err)
-
-      if (length) {
-        if (length == 0) return callback(null, null)
-
-        self._get((length - 1), callback)
-      } else {
-        return callback(new Error("Bug! Callback called without error or value"))
-      }
-    })
+  async last() {
+    let length = await this.length()
+    if (length > 0) {
+      return await this._get((length - 1))
+    }
   }
 
-  first(callback: Callback<ValueT>) {
-    this._get(0, callback)
+  async first() {
+    return await this._get(0)
   }
 }

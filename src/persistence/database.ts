@@ -25,11 +25,11 @@ import { dir } from 'tmp'
 import * as pify from 'pify'
 
 export interface DatabaseOptions<K=any, V=any, O=any, PO=any, GO=any, DO=any, IO=any, BO=any> {
-  db?: AbstractLevelDOWN<K, V, O, PO, GO, DO, IO, BO>
-  dataPath: string
+  db?: AbstractLevelDOWN<K, V, O, PO, GO, DO, IO, BO> | ((location: string) => AbstractLevelDOWN<K, V, O, PO, GO, DO, IO, BO>)
+  dataPath?: string
 }
 
-export default class Database<K, V, O, PO, GO, DO, IO, BO> {
+export class Database<K=any, V=any, O=any, PO=any, GO=any, DO=any, IO=any, BO=any> {
 
   private _options: DatabaseOptions<K, V, O, PO, GO, DO, IO, BO>
   private _db: LevelUp.LevelUp
@@ -40,8 +40,8 @@ export default class Database<K, V, O, PO, GO, DO, IO, BO> {
   transactions: LevelUpObjectAdapter<BN, ExecutedTransaction>
   trieDb: LevelUpObjectAdapter<Buffer, Buffer>
 
-  constructor(options: DatabaseOptions) {
-    this._options = options
+  constructor(options?: DatabaseOptions) {
+    this._options = options || {}
   }
 
   async initialize() {
@@ -56,7 +56,9 @@ export default class Database<K, V, O, PO, GO, DO, IO, BO> {
     // When higher (say 10000), it seems the benefits wear off.
     // See /perf/transactions.js for a benchmark.
     let dbFactory;
-    if (this._options.db) {
+    if (typeof this._options.db === 'function') {
+      dbFactory = this._options.db;
+    } else if (this._options.db && this._options.db.get) {
       let backingStore = this._options.db
       dbFactory = (location: string) => backingStore
     } else {
@@ -64,7 +66,7 @@ export default class Database<K, V, O, PO, GO, DO, IO, BO> {
     }
     
 
-    this._db = LevelUp(dataPath, { db: dbFactory })
+    this._db = await pify(LevelUp)(dataPath, { db: dbFactory })
 
     // Blocks, keyed by array index (not necessarily by block number) (0-based)
     this.blocksByNumber = new LevelUpArrayAdapter<ExecutedBlock>("blocks", this._db, executedBlockTransformer)
@@ -86,4 +88,4 @@ export default class Database<K, V, O, PO, GO, DO, IO, BO> {
   }
 }
 
-module.exports = Database
+export default Database
