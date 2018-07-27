@@ -29,56 +29,75 @@ export default class LevelUpObjectAdapter<KeyT, ValueT> {
     this._valueSerializer = valueSerializer
   }
 
-
-  get(key: KeyT, options: any, callback: Callback<ValueT>) {
-    var self = this
-
+  async get(key: KeyT, options?: any, callback?: Callback<ValueT>) {
     if (options instanceof Function) {
       callback = options
       options = {}
     }
 
-    let encodedKey = this._keySerializer.encode(key)
+    try {
+      let encodedKey = this._encodeKey(key)
 
-    self._db.get(encodedKey, (err, val) => {
-      if (err) return callback(err)
+      let val = await pify(this._db.get)(encodedKey)
+      let decodedValue = this._decodeValue(val)
 
-      let decodedValue = self._valueSerializer.decode(val)
+      if (callback) {
+        callback(null, decodedValue)
+      }
 
-      callback(null, decodedValue)
-    })
+      return val
+    } catch (err) {
+      if (callback) {
+        callback(err)
+      } else throw err
+    }
   }
 
-  put(key: KeyT, value: ValueT, options: any, callback: Callback<never>) {
-    var self = this
-
+  async put(key: KeyT, value: ValueT, options?: any, callback?: Callback<never>) {
     if (options instanceof Function) {
       callback = options
       options = {}
     }
 
-    let encodedKey = this._keySerializer.encode(key)
-    let encodedValue = self._valueSerializer.encode(value)
-    self._db.put(encodedKey, encodedValue, callback)
+    try {
+      let encodedKey = this._encodeKey(key)
+      let encodedValue = this._encodeValue(value)
+      await pify(this._db.put)(encodedKey, encodedValue)
+
+      if (callback) {
+        callback(null)
+      }
+    } catch (err) {
+      if (callback) {
+        callback(err)
+      } else throw err
+    }
   }
 
-  set(key: KeyT, value: ValueT, options: any, callback: Callback<never>) {
-    this.put(key, value, options, callback)
+  async set(key: KeyT, value: ValueT, options?: any, callback?: Callback<never>) {
+    await this.put(key, value, options, callback)
   }
 
-  del(key: KeyT, callback: Callback<never>) {
-    var self = this
-
-    let encodedKey = this._keySerializer.encode(key)
-    self._db.del(encodedKey, callback)
+  async del(key: KeyT, callback?: Callback<never>) {
+    let encodedKey = this._encodeKey(key)
+    try {
+      await pify(this._db.del)(encodedKey)
+      if (callback) {
+        callback(null)
+      }
+    } catch (err) {
+      if (callback) {
+        callback(err)
+      } else throw err
+    }
   }
 
   isOpen() {
     return true
   }
 
-  batch(operations: BatchOperation<KeyT, ValueT>[], options: any, callback: Callback<never>) {
-    this._asyncBatch(operations, options)
+  async batch(operations: BatchOperation<KeyT, ValueT>[], options: any, callback: Callback<never>) {
+    await this._asyncBatch(operations, options)
       .then(() => callback(null))
       .catch((err) => callback(err))
   }
@@ -96,5 +115,17 @@ export default class LevelUpObjectAdapter<KeyT, ValueT> {
         throw new Error("Unknown batch type " + operation.type)
       }
     }
+  }
+
+  private _encodeKey(key: KeyT) {
+    return JSON.stringify(this._keySerializer.encode(key))
+  }
+
+  private _encodeValue(value: ValueT) {
+    return JSON.stringify(this._valueSerializer.encode(value))
+  }
+
+  private _decodeValue(value: string) {
+    return this._valueSerializer.decode(JSON.parse(value))
   }
 }

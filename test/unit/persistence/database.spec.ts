@@ -67,7 +67,7 @@ let db: Database;
 describe('persistence/database.ts', () => {
 
   beforeEach('initialize database', async () => {
-    db = new Database()
+    db = new Database({db: memdown})
     await db.initialize()
   })
 
@@ -76,13 +76,64 @@ describe('persistence/database.ts', () => {
   })
 
   describe('#blocksByNumber', () => {
-    it('should store a block', async () => {
+    it('should store multiple blocks', async () => {
       await db.blocksByNumber.push(testExecutedBlock)
       let length = await db.blocksByNumber.length()
       assert.deepEqual(length, 1)
+
+      await db.blocksByNumber.push(testExecutedBlock)
+      length = await db.blocksByNumber.length()
+      assert.deepEqual(length, 2)
+
       let blk = await db.blocksByNumber.last()
-      console.log(JSON.stringify(blk, null, 2))
       assert.deepEqual(blk, testExecutedBlock)
+    })
+  })
+
+  describe('#logsByBlock', () => {
+    it('should store multiple log entries', async () => {
+      await db.logsByBlock.push([testTransactionLog, testTransactionLog])
+      let length = await db.logsByBlock.length()
+      assert.deepEqual(length, 1)
+
+      await db.logsByBlock.push([testTransactionLog, testTransactionLog, testTransactionLog])
+      length = await db.logsByBlock.length()
+      assert.deepEqual(length, 2)
+
+      let logs = await db.logsByBlock.last()
+      assert(logs)
+
+      if (logs) { // make typescript happy
+        assert.deepEqual(logs.length, 3)
+        if (logs && logs.length > 0) {  // make typescript happy
+          assert.deepEqual(logs[0], testTransactionLog)
+        }
+      }
+    })
+  })
+
+  describe('#blockHashes', () => {
+    it('should error when a block hash has no entry', async () => {
+      try {
+        await db.blockHashes.get(new BN(1))
+        assert.fail("Promise didn't reject: expected NotFoundError")
+      } catch (err) {
+        assert(err.notFound, 'Expected NotFoundError')
+      }
+    })
+
+    it('should store multiple block hash index mappings', async () => {
+      await db.blockHashes.put(new BN(1), 1)
+      await db.blockHashes.put(new BN(2), 2)
+      await db.blockHashes.put(new BN(3), 3)
+
+      let one = await db.blockHashes.get(new BN(1))
+      let two = await db.blockHashes.get(new BN(2))
+      let three = await db.blockHashes.get(new BN(3))
+
+      assert.deepEqual(one, 1)
+      assert.deepEqual(two, 2)
+      assert.deepEqual(three, 3)
     })
   })
 
