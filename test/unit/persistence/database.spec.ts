@@ -137,4 +137,23 @@ describe('persistence/database.ts', () => {
     })
   })
 
+  describe('#transactions', () => {
+    it('should store multiple transactions', async() => {
+      await db.transactions.put(new BN(1), testExecutedTransaction)
+      await db.transactions.put(new BN(2), testExecutedTransaction)
+      await db.transactions.put(new BN(3), testExecutedTransaction)
+
+      let one = await db.transactions.get(new BN(1))
+      let two = await db.transactions.get(new BN(2))
+      let three = await db.transactions.get(new BN(3))
+
+      console.log(one)
+      console.log(typeof one)
+
+      assert.deepEqual(one, testExecutedTransaction)
+      assert.deepEqual(two, testExecutedTransaction)
+      assert.deepEqual(three, testExecutedTransaction)
+    })
+  })
+
 })

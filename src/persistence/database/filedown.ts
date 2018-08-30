@@ -1,8 +1,9 @@
-/*import { AbstractLevelDOWN, Batch, AbstractChainedBatch } from 'abstract-leveldown'
+import { AbstractLevelDOWN, Batch, AbstractChainedBatch } from 'abstract-leveldown'
 import * as fs from 'fs'
 import * as path from 'path'
+import * as pify from 'pify'
 
-export class FileDown<O=any, PO=any, GO=any, DO=any, IO=any, BO=any> extends AbstractLevelDOWN<string, string, O, PO, GO, DO, IO, BO> {
+export class FileDOWN<O=any, PO=any, GO=any, DO=any, IO=any, BO=any> extends AbstractLevelDOWN<string, string, O, PO, GO, DO, IO, BO> {
 
   _location: string
   constructor(location: string) {
@@ -10,21 +11,9 @@ export class FileDown<O=any, PO=any, GO=any, DO=any, IO=any, BO=any> extends Abs
     this._location = location
   }
 
-  open(callback:(err?: any) => void): void;
-  open(options: O, callback: (err?: any) => void): void;
-  open(options: O | ((err?: any) => void), callback?: (err?: any) => void) {
-    if (typeof options === 'function') {
-      callback = options
-    }
-
-    if (callback) {
-      callback(null)
-    }
-  }
-
-  put(key: string, value: string, callback: (err: any) => any): void;
-  put(key: string, value: string, options: PO, callback: (err: any) => any): void;
-  put(key: string, value: string, options: PO | ((err: any) => void), callback?: (err: any) => void) {
+  _put(key: string, value: string, callback: (err: any) => void): void;
+  _put(key: string, value: string, options: PO, callback: (err: any) => void): void;
+  _put(key: string, value: string, options: PO | ((err: any) => void), callback?: (err: any) => void) {
     if (!callback && typeof options === 'function') {
       callback = options
     }
@@ -36,9 +25,9 @@ export class FileDown<O=any, PO=any, GO=any, DO=any, IO=any, BO=any> extends Abs
     }
   }
 
-  get(key: string, callback: (err: any, value: string) => any): void;
-  get(key: string, options: GO, callback: (err: any, value: string) => any): void;
-  get(key: string, options: GO | ((err: any, value: string) => void), callback?: (err: any, value?: string) => void) {
+  _get(key: string, callback: (err: any, value: string) => any): void;
+  _get(key: string, options: GO, callback: (err: any, value: string) => any): void;
+  _get(key: string, options: GO | ((err: any, value: string) => void), callback?: (err: any, value?: string) => void) {
 
     if (typeof options === 'function') {
       callback = options
@@ -49,7 +38,7 @@ export class FileDown<O=any, PO=any, GO=any, DO=any, IO=any, BO=any> extends Abs
     }
 
     fs.readFile(path.join(this._location, key), "utf8", function(err, data) {
-      // stupid unnecessary conditional to appease TypeScript
+      // appease TypeScript
       if (callback) {
         if (err) {
           return callback(new Error("NotFound"))
@@ -59,45 +48,58 @@ export class FileDown<O=any, PO=any, GO=any, DO=any, IO=any, BO=any> extends Abs
     })
   }
 
-  del(key: string, callback: (err: any) => any): void;
-  del(key: string, options: DO, callback: (err: any) => any): void;
-  del(key: string, options: DO | ((err: any) => void), callback: (err: any) => void) {
+  _del(key: string, callback: (err: any) => any): void;
+  _del(key: string, options: DO, callback: (err: any) => any): void;
+  _del(key: string, options: DO | ((err: any) => void), callback?: (err: any) => void) {
+    if (typeof options === 'function') {
+      callback = options
+    }
+
     fs.unlink(path.join(this._location, key), function(err) {
       // Ignore when we try to delete a file that doesn't exist.
       // I'm not sure why this happens. Worth looking into.
-      if (err) {
-        if (err.message.indexOf("ENOENT") >= 0) {
-          return callback()
-        } else {
-          return callback(err)
+      if (callback) {
+        if (err) {
+          if (err.message.indexOf("ENOENT") >= 0) {
+            return callback(null)
+          } else {
+            return callback(err)
+          }
         }
+        callback(null)
       }
-      callback()
     })
   }
 
-  batch(): AbstractChainedBatch<string, string, BO>;
-  batch(array: Batch<string, string>[], callback: (err: any) => any): AbstractChainedBatch<string, string, BO>;
-  batch(array: Batch<string, string>[], options: BO, callback: (err: any) => any): AbstractChainedBatch<string, string, BO>;
-  batch(array: Batch<string, string>[], options: BO, callback: (err: any) => any): AbstractChainedBatch<string, string, BO> {
+  _batch(operations: Batch<string, string>[], options: BO, callback: (err: any) => any) {
+    if (typeof options === 'function') {
+      callback = options
+    }
+
     this._asyncBatch(operations, options)
       .then(callback)
       .catch(callback)
   }
 
-  private async _asyncBatch(operations: BatchOperation[], options: BO) {
-    const _put = pify(this.put)
-    const _del = pify(this.del)
+  private async _asyncBatch(operations: Batch<string, string>[], options: BO) {
+    const _put = pify(this._put)
+    const _del = pify(this._del)
 
     for (let operation of operations) {
-      if (item.type == "put") {
-        await _put(item.key, item.value, options)
-      } else if (item.type == "del") {
-        await _del(item.key, finished)
+      if (operation.type == "put") {
+        await _put(operation.key, operation.value, options)
+      } else if (operation.type == "del") {
+        await _del(operation.key)
       } else {
-        throw new Error("Unknown batch type", item.type)
+        let unknownOperation: any = operation;
+        throw new Error(`Unknown batch type '${unknownOperation.type}'`)
       }
     }
   }
 }
-*/
+
+export function filedown(location: string) {
+  return new FileDOWN(location)
+}
+
+export default filedown

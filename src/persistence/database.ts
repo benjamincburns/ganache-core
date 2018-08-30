@@ -3,6 +3,7 @@ import { BN } from 'bn.js'
 import { AbstractLevelDOWN } from 'abstract-leveldown'
 import * as LevelUp from 'levelup'
 import * as MedeaDOWN from 'medeadown'
+import FileDOWN from './database/filedown'
 import * as CacheDOWN from 'cachedown'
 import LevelUpArrayAdapter from './database/leveluparrayadapter'
 import LevelUpObjectAdapter from './database/levelupobjectadapter'
@@ -62,7 +63,8 @@ export class Database<K=any, V=any, O=any, PO=any, GO=any, DO=any, IO=any, BO=an
       let backingStore = this._options.db
       dbFactory = (location: string) => backingStore
     } else {
-      dbFactory = (location: string) => CacheDOWN(location, MedeaDOWN).maxSize(100)
+      //dbFactory = (location: string) => CacheDOWN(location, MedeaDOWN).maxSize(100)
+      dbFactory = (location: string) => CacheDOWN(location, FileDOWN).maxSize(100)
     }
     
 
